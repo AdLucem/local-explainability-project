@@ -8,3 +8,6 @@ protobuf
 accelerate
 jsonlines
 Pillow
+tokenizers
+pandas
+captum
