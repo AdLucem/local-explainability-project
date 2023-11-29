@@ -138,7 +138,7 @@ if __name__ == "__main__":
     
     western_names = tcav.assemble_concept('western-names', 0, "./names-western.csv")
     russian_names = tcav.assemble_concept('russian-names', 1, "./names-russian.csv")
-    general_names = tcav.assemble_concept('general-names', 2, "./names-general.csv")
+    # general_names = tcav.assemble_concept('general-names', 2, "./names-general.csv")
 
     eval_prompts = []
     eval_completions = []
@@ -152,12 +152,13 @@ if __name__ == "__main__":
             prompt,
             completion,
             experimental_sets=[
-                [western_names, general_names],
-                [russian_names, general_names],
+                [western_names, russian_names],
+                # [russian_names, general_names],
             ],
         )
     
         print()
         print(prompt, completion)
-        print(outputs['0-2']['llama.model'])
-        print(outputs['1-2']['llama.model'])
+        print(outputs['0-1']['llama.model'])
+        # print(outputs['0-2']['llama.model'])
+        # print(outputs['1-2']['llama.model'])
