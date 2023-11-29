@@ -26,7 +26,6 @@ class LlamaCompletionConditionalLikelihood(nn.Module):
         return cls(llama, tokenizer)
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
-        print(args, kwds)
         return super().__call__(*args, **kwds)
 
     def prepare_encodings(self, prompt, completion):
@@ -39,16 +38,16 @@ class LlamaCompletionConditionalLikelihood(nn.Module):
         input_ids = torch.cat([
             self.tokenizer.bos_token_id * torch.ones_like(completion_encodings.input_ids[:,-1:]),
             input_ids,
-            self.tokenizer.eos_token_id * torch.ones_like(completion_encodings.input_ids[:,-1:])
+            # self.tokenizer.eos_token_id * torch.ones_like(completion_encodings.input_ids[:,-1:])
         ], dim=1)
         attention_mask = torch.cat([
             torch.ones_like(completion_encodings.attention_mask[:,-1:]),
             attention_mask,
-            torch.ones_like(completion_encodings.attention_mask[:,-1:])
+            # torch.ones_like(completion_encodings.attention_mask[:,-1:])
         ], dim=1)
 
         completion_ids = input_ids.clone()
-        completion_ids[:,:-completion_encodings.input_ids.size(1)-1] = -100
+        completion_ids[:,:-completion_encodings.input_ids.size(1)] = -100
 
         return input_ids, attention_mask, completion_ids
 
@@ -76,8 +75,8 @@ class LlamaCompletionConditionalLikelihood(nn.Module):
                 How to reduce the loss. Defaults to 'mean'.
         """
         logits = self.llama(input_ids=input_ids, attention_mask=attention_mask).logits
+
         if completion_ids is None:
-            print(input_ids)
             completion_ids = input_ids.clone()
 
         shift_logits = logits[:, :-1, :].contiguous().view(-1, logits.size(-1))
@@ -125,44 +124,40 @@ class TCAV_LMCompletionPipeline:
             enc,
             experimental_sets=experimental_sets,
         )
-        
-        
-
-def main(args):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    model = LlamaCompletionConditionalLikelihood.from_pretrained(args.model_id)
-
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_id", type=str, default="meta-llama/Llama-2-7b-chat-hf")
+    parser.add_argument("--eval_file", type=str, default="eval.jsonl")
 
     args = parser.parse_args()
-    # main(args)
 
     model = LlamaCompletionConditionalLikelihood.from_pretrained(args.model_id)
     tcav = TCAV_LMCompletionPipeline(model, 'cpu')
     
-    west_names = tcav.assemble_concept('western-names', 0, "./names-western.csv")
-    general_names = tcav.assemble_concept('general-names', 1, "./names-general.csv")
+    western_names = tcav.assemble_concept('western-names', 0, "./names-western.csv")
+    russian_names = tcav.assemble_concept('russian-names', 1, "./names-russian.csv")
+    general_names = tcav.assemble_concept('general-names', 2, "./names-general.csv")
 
     eval_prompts = []
     eval_completions = []
-    with jsonlines.open("./eval.jsonl") as reader:
+    with jsonlines.open(args.eval_file) as reader:
         for row in reader:
-            print(row)
             eval_prompts.append(row['prompt'])
             eval_completions.append(row['completion'])
 
     for prompt, completion in zip(eval_prompts, eval_completions):
-        print(prompt, completion)
-        tcav.interpret(
+        outputs = tcav.interpret(
             prompt,
             completion,
-            experimental_sets=[[west_names, general_names]],       
+            experimental_sets=[
+                [western_names, general_names],
+                [russian_names, general_names],
+            ],
         )
-
     
-    
+        print()
+        print(prompt, completion)
+        print(outputs['0-2']['llama.model'])
+        print(outputs['1-2']['llama.model'])
