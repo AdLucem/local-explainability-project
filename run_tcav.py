@@ -120,6 +120,7 @@ class TCAV_LMCompletionPipeline:
 
     def interpret(self, eval_prompt, eval_completion, experimental_sets):
         enc = self.model.prepare_encodings(eval_prompt, eval_completion)
+        print("Encodings prepared")
         return self.tcav.interpret(
             enc,
             experimental_sets=experimental_sets,
@@ -140,6 +141,8 @@ if __name__ == "__main__":
     russian_names = tcav.assemble_concept('russian-names', 1, "./names-russian.csv")
     # general_names = tcav.assemble_concept('general-names', 2, "./names-general.csv")
 
+    print("Concepts assembled")
+    
     eval_prompts = []
     eval_completions = []
     with jsonlines.open(args.eval_file) as reader:
@@ -147,6 +150,8 @@ if __name__ == "__main__":
             eval_prompts.append(row['prompt'])
             eval_completions.append(row['completion'])
 
+    print("Prompts and completions gathered")
+    
     for prompt, completion in zip(eval_prompts, eval_completions):
         outputs = tcav.interpret(
             prompt,
@@ -156,7 +161,8 @@ if __name__ == "__main__":
                 # [russian_names, general_names],
             ],
         )
-    
+        print("Output interpreted")
+        
         print()
         print(prompt, completion)
         print(outputs['0-1']['llama.model'])
