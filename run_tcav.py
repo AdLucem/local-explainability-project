@@ -121,6 +121,7 @@ class TCAV_LMCompletionPipeline:
     def interpret(self, eval_prompt, eval_completion, experimental_sets):
         enc = self.model.prepare_encodings(eval_prompt, eval_completion)
         print("Encodings prepared")
+        print(type(enc))
         return self.tcav.interpret(
             enc,
             experimental_sets=experimental_sets,
